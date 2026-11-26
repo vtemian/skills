@@ -179,7 +179,10 @@ export async function launch() {
     chrome.removeAllListeners('exit')
     chrome.kill()
     await new Promise(resolve => chrome.on('exit', resolve))
-    rmSync(profile, { recursive: true, force: true })
+    // Chrome's helpers can still be writing as it goes; the folder is in tmp, so a miss is fine.
+    try {
+      rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })
+    } catch {}
   }
 
   return { open, close }
