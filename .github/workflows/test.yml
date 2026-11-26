@@ -1,0 +1,43 @@
+name: test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: e2e (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # macOS checks the pages in WebKit (snap.swift) and in Chrome; Linux in Chrome only.
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Nothing to install: the skills ship what they need, and the tests drive the
+      # Chrome that is already on the runner.
+      - name: Run the tests
+        run: node --test tests/
+
+      - name: Keep the pages and their pictures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-${{ matrix.os }}
+          path: tests/out/
+          if-no-files-found: ignore
