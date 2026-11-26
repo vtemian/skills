@@ -31,8 +31,8 @@ builds and checks the page.
 Clone the repo and link the skill you want into your personal skills folder:
 
 ```bash
-git clone https://github.com/vtemian/skills.git ~/projects/skills
-ln -s ~/projects/skills/skills/wtf ~/.claude/skills/wtf
+git clone https://github.com/vtemian/skills.git ~/projects/ai/skills
+ln -s ~/projects/ai/skills/skills/wtf ~/.claude/skills/wtf
 ```
 
 `SKILL.md` calls its scripts at `~/.claude/skills/wtf/`, so the link has to be there.
