@@ -30,7 +30,7 @@ enough to split the question well, not enough to answer it. Start with one
 command, which lists the files, the docs and the last commits, and never fails:
 
 ```
-~/.claude/skills/wtf/look.sh
+~/.claude/skills/wtf/scripts/look.sh
 ```
 
 Do not probe for files that may be missing with a bare `ls` or a glob
@@ -297,19 +297,26 @@ Write the whole explanation to `<slug>.md` in the session scratch directory and
 build the page, with the project as the working directory:
 
 ```
-~/.claude/skills/wtf/page.sh <absolute path>/<slug>.md
+~/.claude/skills/wtf/scripts/page.sh <absolute path>/<slug>.md
 ```
 
-It does four things and prints one line for each:
+It needs only `node`. It prints one line for each thing it does:
 
-- `ok` / `FAIL` per diagram: parsed with the real Mermaid parser. A `FAIL` carries
-  the parser's message.
+- `page`: `<slug>.html` beside the markdown, one file, nothing loaded from the
+  network. The page draws its own diagrams when it opens, with the Mermaid that
+  is inside it.
+- `ok` / `FAIL` per diagram: the page was opened and the diagram drew, or it did
+  not. A `FAIL` carries Mermaid's message. With a `FAIL` the page is not opened
+  for the person.
 - `warn`: something the reader will trip on - a diagram too wide, a card with no
   kind, a note that matches no card, a section with too much text or no diagram.
-- `page`: `<slug>.html` beside the markdown, one file, nothing loaded from the
-  network. It opens in the browser (`NO_OPEN=1` builds without opening).
 - `look`: the page drawn in WebKit, checked (every card on its own box, no two
   cards on top of each other, no title cut off), and saved whole as `<slug>.png`.
+  It opens in the browser after that (`NO_OPEN=1` builds without opening).
+
+On a machine with no `swiftc` the diagrams are checked in a headless Chrome
+instead: `ok` / `FAIL` and `warn` still come, but there is no layout check and no
+picture, so open the page and look at it yourself.
 
 It exits 0 only when every diagram draws and the layout check passes. Fix every
 `FAIL`, every `warn` and every `look` finding and run it again until there is
@@ -327,7 +334,7 @@ the page, the "where to look" pointers, and the threads worth pulling. Do not
 paste the whole explanation again; the page is the explanation.
 
 Never change the look per page: no inline HTML, no styles in the markdown. A
-change to the look is a change to `page.css` and `mermaid.json` (the same colours
+change to the look is a change to `scripts/page.css` and `scripts/mermaid.json` (the same colours
 in both), and it applies to every page.
 
 When the person asks to keep it ("save this", "put it in the docs"), write the
@@ -351,7 +358,7 @@ is telling you what their browser shows, and it differs from what you checked.
    (the Chrome tools, or `chrome --headless --screenshot`) and look there. Do not
    reply "it looks fine to me" from one engine.
 3. Decide where the fault lives. The same markdown on a healthy renderer would
-   draw correctly -> the fault is in the skill's files (`page.css`, `page.js`,
+   draw correctly -> the fault is in the skill's files in `scripts/` (`page.css`, `page.js`,
    `render.mjs`, `cards.mjs`, `snap.swift`), so fix it there, for every future
    page, and never by special-casing this page's markdown. The markdown asks for
    something unreadable (too many cards, long titles, crossing arrows) -> fix the

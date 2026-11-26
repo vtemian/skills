@@ -1,11 +1,15 @@
-// Render a page in WebKit, check its diagrams and save a picture of the whole page.
-// Built and run by page.sh:
+// Open a page in WebKit, wait until it has drawn its diagrams, check them and save a
+// picture of the whole page. Built and run by page.sh:
 //
 //   snap <page.html> <out.png>
 //
-// WebKit is the engine that draws HTML-over-SVG differently from Chrome, so this is
-// the check that catches a diagram that looks right in one browser and not in the other.
-// Prints one line per finding, "layout ok" when there is none, and exits 1 on a finding.
+// The page draws its own diagrams (page.js), so this is where a diagram that does not
+// draw is found. WebKit is also the engine that draws HTML-over-SVG differently from
+// Chrome, so it catches a diagram that looks right in one browser and not in the other.
+//
+// Prints "ok" or "FAIL" for each diagram, a "warn" for each thing the page noticed, and
+// a "look" for each layout finding ("look  layout ok" when there is none).
+// Exits 0 when all is well, 1 on a layout finding, 3 when a diagram did not draw.
 
 import Cocoa
 import WebKit
@@ -23,6 +27,7 @@ let check = """
     const svg = figure.querySelector('svg')
     const cards = [...figure.querySelectorAll('.card')]
     const boxes = cards.map(card => card.getBoundingClientRect())
+    if (figure.classList.contains('broken')) return
     if (!svg || svg.getBoundingClientRect().width < 50) found.push(`${name}: the drawing has no size`)
     if (cards.length && !figure.querySelector('.stage.placed')) found.push(`${name}: the cards were never placed`)
     boxes.forEach((box, at) => {
@@ -35,13 +40,22 @@ let check = """
     const text = [...figure.querySelectorAll('.card .title, .card .detail')].filter(part => part.scrollWidth > part.clientWidth + 1)
     text.forEach(part => found.push(`${name}: "${part.textContent}" is cut off in its card; shorten it`))
   })
-  return JSON.stringify({ height: Math.ceil(document.documentElement.scrollHeight), found })
+  const { diagrams, warnings } = window.wtf
+  return JSON.stringify({ height: Math.ceil(document.documentElement.scrollHeight), found, diagrams, warnings })
 })()
 """
+
+struct Diagram: Decodable {
+    let number: String
+    let first: String
+    let why: String
+}
 
 struct Report: Decodable {
     let height: Int
     let found: [String]
+    let diagrams: [Diagram]
+    let warnings: [String]
 }
 
 final class Snapper: NSObject, WKNavigationDelegate {
@@ -58,7 +72,21 @@ final class Snapper: NSObject, WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self.inspect() }
+        wait(until: Date().addingTimeInterval(60))
+    }
+
+    // The page says when it has drawn every diagram; a page that never says so is broken.
+    func wait(until limit: Date) {
+        view.evaluateJavaScript("Boolean(window.wtf && window.wtf.done)") { value, _ in
+            if value as? Bool == true {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { self.inspect() }
+            } else if Date() > limit {
+                print("FAIL  --  the page never finished drawing its diagrams")
+                exit(3)
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { self.wait(until: limit) }
+            }
+        }
     }
 
     func inspect() {
@@ -83,9 +111,15 @@ final class Snapper: NSObject, WKNavigationDelegate {
                let png = bitmap.representation(using: .png, properties: [:]) {
                 try? png.write(to: URL(fileURLWithPath: self.out))
             }
-            report.found.forEach { print($0) }
-            if report.found.isEmpty { print("layout ok") }
-            exit(report.found.isEmpty ? 0 : 1)
+            let undrawn = report.diagrams.filter { !$0.why.isEmpty }
+            for diagram in report.diagrams {
+                print("\(diagram.why.isEmpty ? "ok   " : "FAIL ") \(diagram.number)  \(diagram.first)")
+                diagram.why.split(separator: "\n").prefix(8).forEach { print("      \($0)") }
+            }
+            report.warnings.forEach { print("warn  \($0)") }
+            report.found.forEach { print("look  \($0)") }
+            if report.found.isEmpty { print("look  layout ok") }
+            exit(undrawn.isEmpty ? (report.found.isEmpty ? 0 : 1) : 3)
         }
     }
 }

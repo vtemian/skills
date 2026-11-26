@@ -175,6 +175,12 @@ figure.diagram {
 
 .cards { position: absolute; inset: 0; pointer-events: none; }
 
+figure.broken .stage { max-width: 760px; min-width: 0; padding: 20px 24px; }
+
+figure.broken .stage p { margin: 0 0 12px; color: #a3392c; font: 600 14px/1.5 var(--sans); white-space: pre-wrap; }
+
+figure.broken .stage pre { margin: 0; font: 12.5px/1.5 var(--mono); color: var(--muted); white-space: pre-wrap; }
+
 .stage:not(.placed) .cards { visibility: hidden; }
 
 .card {

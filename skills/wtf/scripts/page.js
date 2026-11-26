@@ -1,3 +1,9 @@
+// The page draws its own diagrams when it opens, with the Mermaid that is in the page:
+//   each figure holds its Mermaid text -> drawn, and on a flowchart each box Mermaid laid
+//   out is handed to the card the page draws over it
+//   a diagram that does not draw      -> the error and the text are shown in its place
+// What happened is kept in window.wtf for the checks that open the page (page.sh).
+//
 // What a figure does when you use it:
 //   point at a box or its note  -> that box, its arrows and its neighbours stay, the rest fades
 //   click it                    -> it stays chosen until you click it again or press Escape
@@ -40,7 +46,11 @@ function place(stage, svg, cards) {
 
   stage.style.setProperty('--k', String(scale))
   for (const [id, card] of cards) {
-    const box = svg.querySelector(`g.node[data-box="${id}"] > rect`).getBoundingClientRect()
+    const box = svg.querySelector(`g.node[data-box="${id}"] > rect`)?.getBoundingClientRect()
+
+    if (!box) {
+      continue
+    }
 
     card.style.left = `${box.left - frame.left}px`
     card.style.top = `${box.top - frame.top}px`
@@ -148,4 +158,124 @@ function wire(figure) {
   })
 }
 
-document.querySelectorAll('figure.diagram').forEach(wire)
+const WIDEST = 1300
+const report = { done: false, diagrams: [], warnings: [] }
+
+// Hand each box Mermaid laid out to its card, and tell every arrow which boxes it joins.
+// HTML inside the SVG itself is misplaced by WebKit, so the boxes in it are emptied.
+function mark(figure, svg, number) {
+  const ids = [...figure.querySelectorAll('.cards .card')].map(card => card.dataset.box)
+
+  for (const spot of svg.querySelectorAll('g.node [data-node]')) {
+    if (ids.includes(spot.dataset.node)) {
+      const node = spot.closest('g.node')
+
+      node.dataset.box = spot.dataset.node
+      node.classList.add('carded')
+      spot.closest('foreignObject').remove()
+    }
+  }
+
+  for (const arrow of svg.querySelectorAll('[data-id^="L_"]')) {
+    const pair = arrow.dataset.id.replace(/^L_/, '').replace(/_\d+$/, '')
+    const from = ids.find(id => pair.startsWith(`${id}_`) && ids.includes(pair.slice(id.length + 1)))
+
+    if (from) {
+      arrow.dataset.from = from
+      arrow.dataset.to = pair.slice(from.length + 1)
+    }
+  }
+
+  const drawn = [...svg.querySelectorAll('[id]')].map(part => part.id)
+
+  for (const note of figure.querySelectorAll('.notes li')) {
+    const box = note.dataset.box
+    const safe = box.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const wanted = new RegExp(`^diagram-${number}-(?:[A-Za-z]+-)?${safe}(?:-\\d+)?$`)
+    const id = drawn.find(candidate => wanted.test(candidate))
+
+    if (id) {
+      note.dataset.target = id
+    } else if (svg.querySelector(`[name="${CSS.escape(box)}"]`)) {
+      note.dataset.actor = box
+    } else {
+      report.warnings.push(`diagram ${number}: the note for \`${box}\` matches no box id; it is listed without a badge`)
+    }
+  }
+}
+
+function broken(figure, text, why) {
+  const say = document.createElement('p')
+  const source = document.createElement('pre')
+
+  say.textContent = `This diagram did not draw: ${why}`
+  source.textContent = text
+  figure.classList.add('broken')
+  figure.querySelector('.stage').replaceChildren(say, source)
+}
+
+// Mermaid measures text where it draws, so it draws on a bench the page's styles do not reach.
+async function draw(figure, bench) {
+  const number = figure.dataset.number
+  const stage = figure.querySelector('.stage')
+  const kept = as => figure.querySelector(`pre.source[data-as="${as}"]`)?.textContent
+  const plain = kept('plain')
+  const carded = kept('cards')
+  const entry = { number, first: plain.split('\n')[0].trim(), why: '' }
+
+  report.diagrams.push(entry)
+  try {
+    const { svg } = await mermaid.render(`diagram-${number}`, carded ?? plain, bench)
+
+    stage.insertAdjacentHTML('afterbegin', svg)
+  } catch (error) {
+    entry.why = String(error?.message || error)
+    // The message has to be about the text the author wrote, not the one made for cards.
+    if (carded) {
+      try {
+        await mermaid.render(`diagram-${number}-plain`, plain, bench)
+        entry.why = 'the diagram draws as plain Mermaid but not as cards'
+      } catch (inner) {
+        entry.why = String(inner?.message || inner)
+      }
+    }
+    bench.replaceChildren()
+    broken(figure, plain, entry.why)
+
+    return
+  }
+
+  const svg = stage.querySelector('svg')
+  const { width, height } = svg.viewBox.baseVal
+
+  stage.style.setProperty('--natural', `${Math.round(width)}px`)
+  figure.classList.toggle('tall', figure.querySelector('.notes li') !== null && height > width * 0.9)
+  if (width > WIDEST) {
+    report.warnings.push(`diagram ${number} is ${Math.round(width)}px wide and will scroll sideways: use fewer boxes, shorter labels or a top-down layout`)
+  }
+  mark(figure, svg, number)
+  wire(figure)
+}
+
+async function drawAll() {
+  const figures = [...document.querySelectorAll('figure.diagram')]
+  const bench = document.createElement('div')
+
+  if (figures.length) {
+    bench.style.cssText = 'all: initial; display: block; position: absolute; left: -10000px; top: 0; width: 1600px; visibility: hidden'
+    document.body.append(bench)
+    mermaid.initialize({ ...window.WTF_LOOK, startOnLoad: false, suppressErrorRendering: true })
+    for (const figure of figures) {
+      await draw(figure, bench)
+    }
+    bench.remove()
+  }
+}
+
+window.wtf = report
+drawAll()
+  .catch(error => report.diagrams.push({ number: '--', first: 'the page', why: String(error?.message || error) }))
+  .finally(() => {
+    report.done = true
+    document.documentElement.dataset.wtf = JSON.stringify(report)
+  })

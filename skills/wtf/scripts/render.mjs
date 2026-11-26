@@ -1,25 +1,26 @@
 // Build one page from an explanation in markdown. Called by page.sh.
 //
-//   node render.mjs <explanation.md> <diagrams dir> <out.html> <path of mmdc>
+//   node render.mjs <explanation.md> <out.html>
 //
 // What the markdown may hold beyond plain markdown:
-//   ```mermaid block            -> a figure, from <diagrams dir>/NN.svg
+//   ```mermaid block            -> a figure; the page draws it when it opens (page.js)
 //   a list right after it whose -> numbered notes on that figure; each item starts
 //   items start with `box id`      with the id of a box and gets a badge on that box
 //   > [!NOTE] / [!IMPORTANT] /  -> a margin note: a side fact / easy to get wrong /
 //     [!WARNING] blockquote        not verified
 //
-// marked is taken from the mermaid-cli install, so there is nothing else to install.
+// Mermaid and marked are in vendor/, so there is nothing to install. Mermaid goes into
+// the page whole: the page is one file and draws its own diagrams with no network.
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { cards } from './cards.mjs'
+import { marked } from './vendor/marked.esm.js'
 
-const [doc, diagrams, out, mmdc] = process.argv.slice(2)
+const [doc, out] = process.argv.slice(2)
 const here = dirname(fileURLToPath(import.meta.url))
-const { marked } = createRequire(mmdc)('marked')
 
 const KINDS = {
   NOTE: ['note', 'Note'],
@@ -29,7 +30,6 @@ const KINDS = {
   CAUTION: ['gap', 'Not verified'],
 }
 
-const WIDEST = 1300
 const PROSE = 60
 const words = text => text.split(/\s+/).filter(Boolean).length
 const escapeHtml = text => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -73,73 +73,31 @@ function card(id, box, order) {
   return `<div class="card ${family}" data-box="${id}" tabindex="0">${tile}<span class="words"><span class="title">${escapeHtml(box.title)}</span>${detail}</span>${chip}</div>`
 }
 
-// The cards are plain HTML laid over the drawing (page.js puts each on its box).
-// HTML inside the SVG itself is misplaced by WebKit, so the boxes in it stay empty.
-function withBoxes(svg, boxes) {
-  const node =
-    /<g class="node ([^"]*" id="[^"]+"[^>]*>\s*<rect[^>]*?\/>\s*<g class="label"[^>]*>\s*<rect\/>)<foreignObject[^>]*>(?:(?!<\/foreignObject>)[\s\S])*?data-node="([^"]+)"(?:(?!<\/foreignObject>)[\s\S])*?<\/foreignObject>/g
-
-  return svg.replace(node, (whole, head, id) => (boxes[id] ? `<g data-box="${id}" class="node carded ${head}` : whole))
-}
-
-function withEnds(svg, ids) {
-  return svg.replace(/data-id="L_([^"]+)_\d+"/g, (whole, pair) => {
-    const from = ids.find(id => pair.startsWith(`${id}_`) && ids.includes(pair.slice(id.length + 1)))
-
-    return from ? `${whole} data-from="${from}" data-to="${pair.slice(from.length + 1)}"` : whole
-  })
-}
-
-function target(svg, number, box) {
-  const ids = [...svg.matchAll(/\bid="([^"]+)"/g)].map(found => found[1])
-  const safe = box.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const wanted = new RegExp(`^diagram-${number}-(?:[A-Za-z]+-)?${safe}(?:-\\d+)?$`)
-  const id = ids.find(candidate => wanted.test(candidate))
-
-  if (id) {
-    return `data-target="${id}"`
-  }
-
-  if (svg.includes(`name="${box}"`)) {
-    return `data-actor="${escapeHtml(box)}"`
-  }
-
-  warnings.push(`diagram ${number}: the note for \`${box}\` matches no box id; it is listed without a badge`)
-
-  return ''
-}
-
-function figure(number, notes) {
-  const file = join(diagrams, `${number}.svg`)
-  const record = join(diagrams, `${number}.json`)
-  const { boxes = {}, unknown = [] } = existsSync(record) ? JSON.parse(readFileSync(record, 'utf8')) : {}
+// The page draws the diagram from the text kept here: as cards when it is a flowchart,
+// and the text as the author wrote it, which is what an error message is about.
+function figure(number, source, notes) {
+  const drawn = cards(source, kinds)
+  const { boxes = {}, unknown = [] } = drawn || {}
   const order = Object.fromEntries((notes || []).map((note, index) => [note.box, index + 1]))
-  const plain = existsSync(file) ? readFileSync(file, 'utf8') : ''
-  const svg = withEnds(withBoxes(plain, boxes), Object.keys(boxes))
-  const cards = Object.entries(boxes).map(([id, each]) => card(id, each, order[id])).join('')
+  const laid = Object.entries(boxes).map(([id, each]) => card(id, each, order[id])).join('')
   const rows = (notes || []).map((note, index) => {
     const box = boxes[note.box]
     const name = box ? `<b>${escapeHtml(box.title)}</b>` : ''
     const mark = box && box.kind ? `<span class="tile ${kinds[box.kind].family}">${icon(box.kind)}</span>` : ''
 
-    return `<li ${target(svg, number, note.box)} data-box="${escapeHtml(note.box)}" tabindex="0"><span class="n">${index + 1}</span><span class="say">${mark}${name}<span>${marked.parseInline(note.text)}</span></span></li>`
+    return `<li data-box="${escapeHtml(note.box)}" tabindex="0"><span class="n">${index + 1}</span><span class="say">${mark}${name}<span>${marked.parseInline(note.text)}</span></span></li>`
   })
   const walk = rows.length > 1 ? `<div class="walk"><button type="button" data-step="-1" aria-label="Previous box">←</button><span class="at">Step through</span><button type="button" data-step="1" aria-label="Next box">→</button></div>` : ''
   const list = rows.length ? `<div class="side">${walk}<ol class="notes">${rows.join('')}</ol></div>` : ''
-  const box = (svg.match(/viewBox="[\d.-]+ [\d.-]+ ([\d.]+) ([\d.]+)"/) || []).slice(1).map(Number)
-  const [width = 0, height = 0] = box
-  const tall = rows.length && height > width * 0.9 ? ' tall' : ''
+  const kept = (as, text) => `<pre class="source" data-as="${as}" hidden>${escapeHtml(text)}</pre>`
+  const sources = kept('plain', source) + (drawn ? kept('cards', drawn.text) : '')
 
   unknown.forEach(kind => warnings.push(`diagram ${number}: \`:::${kind}\` is not a kind (see icons.json); the box has no icon`))
   Object.entries(boxes)
     .filter(([, each]) => !each.kind)
     .forEach(([id]) => warnings.push(`diagram ${number}: box \`${id}\` has no kind; give it one (\`${id}["…"]:::kind\`) so it gets an icon`))
 
-  if (width > WIDEST) {
-    warnings.push(`diagram ${number} is ${Math.round(width)}px wide and will scroll sideways: use fewer boxes, shorter labels or a top-down layout`)
-  }
-
-  return `<figure class="diagram${tall}" id="figure-${number}"><div class="canvas"><div class="stage" style="--natural: ${Math.round(width)}px">${svg}<div class="cards">${cards}</div></div></div>${list}</figure>`
+  return `<figure class="diagram" id="figure-${number}" data-number="${number}"><div class="canvas"><div class="stage">${sources}<div class="cards">${laid}</div></div></div>${list}</figure>`
 }
 
 const pieces = []
@@ -173,7 +131,7 @@ for (let index = 0; index < tokens.length; index += 1) {
       next += 1
     }
     const notes = noteItems(tokens[next])
-    pieces.push(figure(String(count).padStart(2, '0'), notes))
+    pieces.push(figure(String(count).padStart(2, '0'), token.text, notes))
     index = notes ? next : index
     continue
   }
@@ -214,8 +172,10 @@ try {
   project = basename(process.cwd())
 }
 
+// Inside a <script> the only text that ends it early is a closing script tag.
+const inline = file => readFileSync(join(here, file), 'utf8').replace(/<\/script/gi, '<\\/script')
 const css = readFileSync(join(here, 'page.css'), 'utf8')
-const js = readFileSync(join(here, 'page.js'), 'utf8')
+const look = JSON.stringify(JSON.parse(readFileSync(join(here, 'mermaid.json'), 'utf8'))).replace(/</g, '\\u003c')
 const today = new Date().toISOString().slice(0, 10)
 
 writeFileSync(
@@ -233,7 +193,9 @@ ${body}
 </article>
 <footer>${today} · written from <code>${escapeHtml(doc)}</code></footer>
 </main>
-<script>${js}</script>
+<script>${count ? inline('vendor/mermaid.min.js') : ''}</script>
+<script>window.WTF_LOOK = ${look}</script>
+<script>${inline('page.js')}</script>
 </html>
 `,
 )
