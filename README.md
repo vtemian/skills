@@ -8,6 +8,10 @@ My personal agent skills. Small, readable, meant to be copied and changed.
 
 Explains something from the project you are in, in plain words, on a page.
 
+[![A /wtf run: the question, the agents reading, the page opening, a follow-up](media/wtf.gif)](media/wtf.mp4)
+
+The full-size video is at [`media/wtf.mp4`](media/wtf.mp4) (47 seconds, no sound).
+
 You ask a question about your codebase. Several agents read the code, the notes and the
 history in parallel. The answer opens in the browser as one page of diagrams, each with
 numbered notes. Ask a follow-up and the same page grows a new section.
@@ -15,16 +19,6 @@ numbered notes. Ask a follow-up and the same page grows a new section.
 ```text
 /wtf how does a request get from the api to the worker?
 ```
-
-Needs:
-
-- Claude Code
-- Node.js
-- `mmdc`, the Mermaid CLI: `npm i -g @mermaid-js/mermaid-cli`
-- macOS, for the WebKit check that looks at the finished page (`snap.swift`)
-
-Everything lives in [`skills/wtf`](skills/wtf): `SKILL.md` is the instructions, the rest
-builds and checks the page.
 
 ## Install
 
