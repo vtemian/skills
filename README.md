@@ -12,7 +12,7 @@ Explains something from the project you are in, in plain words, on a page.
 /wtf how does a request get from the api to the worker?
 ```
 
-[![A /wtf run: the question, the agents reading, the page opening, a follow-up](media/wtf.gif)](media/wtf.mp4)
+![A /wtf run: the question, the agents reading, the page opening, a follow-up](media/wtf.gif)
 
 You ask a question about your codebase. Several agents read the code, the notes and the
 history in parallel. The answer opens in the browser as one page of diagrams, each with
