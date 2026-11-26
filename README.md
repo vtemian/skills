@@ -37,20 +37,6 @@ cd skills
 Each skill is a folder with a `SKILL.md`, a `README.md` and a `scripts/` folder. `SKILL.md`
 calls its scripts at `~/.claude/skills/<name>/scripts/`, which is why they are linked there.
 
-## Tests
-
-```bash
-node --test tests/*.test.mjs
-```
-
-The tests build real pages with each skill's own scripts, open them in a headless Chrome
-and check what a reader would see: every diagram drawn and visible, every card on its box,
-the notes, hover, click and step-through. They also run the installer in a terminal. They
-need Node 22 or newer and Chrome, and install nothing. The pages and a picture of each are
-left in `tests/out/`.
-
-GitHub Actions runs them on every push, on Linux and on macOS.
-
 ## License
 
 MIT
