@@ -40,7 +40,7 @@ calls its scripts at `~/.claude/skills/<name>/scripts/`, which is why they are l
 ## Tests
 
 ```bash
-node --test tests/
+node --test tests/*.test.mjs
 ```
 
 The tests build real pages with each skill's own scripts, open them in a headless Chrome

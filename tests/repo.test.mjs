@@ -1,6 +1,6 @@
 // Tests that hold for every skill in the repo, and for install.sh.
 //
-//   node --test tests/
+//   node --test tests/*.test.mjs
 
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'

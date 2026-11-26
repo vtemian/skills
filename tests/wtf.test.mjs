@@ -1,7 +1,7 @@
 // End to end tests of the wtf skill: markdown in, a page out, and the page opened in a
 // real Chrome to see that its diagrams are drawn, visible and usable.
 //
-//   node --test tests/
+//   node --test tests/*.test.mjs
 //
 // Every page is built by scripts/page.sh, the command the skill runs. The pages and a
 // picture of each are left in tests/out/ to look at when a test fails.

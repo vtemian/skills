@@ -32,7 +32,7 @@ jobs:
       # Nothing to install: the skills ship what they need, and the tests drive the
       # Chrome that is already on the runner.
       - name: Run the tests
-        run: node --test tests/
+        run: node --test tests/*.test.mjs
 
       - name: Keep the pages and their pictures
         if: always()
