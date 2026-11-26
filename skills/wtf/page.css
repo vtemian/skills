@@ -1,0 +1,364 @@
+/* The one look of every wtf page. Diagram colours are the same values in mermaid.json. */
+:root {
+  --paper: #fbfaf7;
+  --ink: #1f1d1a;
+  --muted: #6b665e;
+  --rule: #e4e0d8;
+  --wash: #f1eee7;
+  --accent: #0f5e5a;
+  --surprise: #a15c00;
+  --gap: #a3352b;
+  --text: 720px;
+  --side: 270px;
+  --gutter: 44px;
+  --serif: Charter, 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --sans: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--paper); color: var(--ink); -webkit-text-size-adjust: 100%; }
+
+body { margin: 0; font: 18px/1.62 var(--serif); }
+
+main {
+  max-width: calc(var(--text) + var(--side) + var(--gutter) + 64px);
+  margin: 0 auto;
+  padding: 72px 32px 96px;
+}
+
+header, article, footer { max-width: var(--text); }
+
+.eyebrow {
+  margin: 0 0 10px;
+  font: 600 12px/1 var(--sans);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+h1 { margin: 0 0 28px; font: 600 40px/1.15 var(--serif); letter-spacing: -0.01em; text-wrap: balance; }
+
+article { counter-reset: idea; }
+
+h2 {
+  clear: both;
+  counter-increment: idea;
+  margin: 76px 0 10px;
+  padding-top: 26px;
+  border-top: 1px solid var(--rule);
+  font: 600 28px/1.22 var(--serif);
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+
+h2::before {
+  content: counter(idea, decimal-leading-zero);
+  display: block;
+  margin-bottom: 8px;
+  font: 600 12px/1 var(--sans);
+  letter-spacing: 0.09em;
+  color: var(--accent);
+}
+
+h2 + p { color: var(--muted); font: 16px/1.5 var(--sans); }
+
+h3 { margin: 36px 0 8px; font: 600 20px/1.3 var(--serif); }
+
+p { margin: 0 0 16px; }
+
+.lead { font-size: 23px; line-height: 1.45; margin-bottom: 8px; text-wrap: pretty; }
+
+a { color: var(--accent); text-underline-offset: 3px; }
+
+strong { font-weight: 600; }
+
+code {
+  font: 0.82em/1.4 var(--mono);
+  background: var(--wash);
+  border-radius: 4px;
+  padding: 0.12em 0.36em;
+  overflow-wrap: anywhere;
+}
+
+code.ref { background: none; border: 1px solid var(--rule); color: var(--accent); }
+
+pre { background: var(--wash); border-radius: 8px; padding: 16px 18px; overflow-x: auto; }
+
+pre code { background: none; padding: 0; font-size: 14px; }
+
+ul, ol { margin: 0 0 18px; padding-left: 0; list-style: none; }
+
+li { position: relative; margin: 0 0 9px; padding-left: 30px; }
+
+ul > li::before { content: ''; position: absolute; left: 10px; top: 0.72em; width: 5px; height: 5px; border-radius: 50%; background: var(--muted); }
+
+article > ol { counter-reset: step; }
+
+article > ol > li { counter-increment: step; padding-left: 42px; margin-bottom: 13px; }
+
+article > ol > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.22em;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  font: 600 12px/24px var(--sans);
+  text-align: center;
+  color: var(--muted);
+}
+
+.table { overflow-x: auto; margin: 0 0 20px; }
+
+table { border-collapse: collapse; width: 100%; font: 15px/1.45 var(--sans); }
+
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+th, td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+
+blockquote { margin: 0 0 18px; padding-left: 18px; border-left: 2px solid var(--rule); color: var(--muted); }
+
+/* Margin notes: beside the text on a wide screen, in the flow on a narrow one. */
+aside.margin {
+  margin: 4px 0 20px;
+  padding: 2px 0 2px 16px;
+  border-left: 2px solid var(--accent);
+  font: 14.5px/1.5 var(--sans);
+  color: #45413b;
+}
+
+aside.margin p { margin: 0 0 6px; }
+
+aside.margin .label { display: block; margin-bottom: 4px; font: 600 11px/1.2 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+
+aside.surprise { border-color: var(--surprise); }
+aside.surprise .label { color: var(--surprise); }
+aside.gap { border-color: var(--gap); }
+aside.gap .label { color: var(--gap); }
+
+@media (min-width: 1120px) {
+  aside.margin {
+    float: right;
+    clear: right;
+    width: var(--side);
+    margin: 6px calc(-1 * (var(--side) + var(--gutter))) 20px 0;
+  }
+}
+
+/* Figures use the full width, text column plus margin. */
+figure.diagram {
+  clear: both;
+  width: min(calc(100% + var(--side) + var(--gutter)), calc(100vw - 64px));
+  margin: 22px 0 28px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.canvas {
+  overflow-x: auto;
+  padding: 34px 28px;
+  background: radial-gradient(circle, #d9d4c9 1px, transparent 1.2px) 0 0 / 18px 18px, #fdfcfa;
+}
+
+.stage { position: relative; width: 100%; max-width: var(--natural); min-width: min(var(--natural), 960px); margin: 0 auto; --k: 1; }
+
+.stage svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* Flowcharts: Mermaid places the boxes and arrows; the page lays a card over each box. */
+.stage svg g.node.carded > rect { fill: none !important; stroke: none !important; filter: none !important; }
+
+.cards { position: absolute; inset: 0; pointer-events: none; }
+
+.stage:not(.placed) .cards { visibility: hidden; }
+
+.card {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10em;
+  padding: 0 14em 0 8em;
+  background: #fff;
+  border: 1px solid #d5cfc3;
+  border-radius: 12em;
+  box-shadow: 0 1px 2px rgba(31, 29, 26, 0.07), 0 4px 10px -6px rgba(31, 29, 26, 0.18);
+  font: calc(var(--k) * 1px) / 1 var(--sans);
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s, opacity 0.18s;
+}
+
+.card.plain { padding-left: 14em; }
+
+.tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34em;
+  height: 34em;
+  border-radius: 9em;
+  background: var(--tile, #eceae4);
+  color: var(--tint, #45413b);
+}
+
+.tile svg { width: 18em; height: 18em; }
+
+.actor { --tile: #f7e6d5; --tint: #9a4f12; }
+.machine { --tile: #eceae4; --tint: #45413b; }
+.data { --tile: #dce8f4; --tint: #24527a; }
+.agent { --tile: #e3defa; --tint: #4a3aa8; }
+.gate { --tile: #fbebc0; --tint: #8a5a00; }
+.ok { --tile: #dbefdf; --tint: #256b3a; }
+.fail { --tile: #f7dcd7; --tint: #a3352b; }
+
+.card.agent { border-color: #b9aef0; }
+.card.gate { border-color: #dcb24a; border-style: dashed; }
+.card.ok { border-color: #9fcfac; }
+.card.fail { border-color: #e2a79f; }
+
+.card .words { display: flex; flex-direction: column; min-width: 0; }
+
+.card .title { font-size: 14em; line-height: 1.25; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; }
+
+.card .detail { margin-top: 2px; font: 11.5em/1.25 var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+
+.card .chip {
+  position: absolute;
+  top: -0.65em;
+  right: -0.65em;
+  display: grid;
+  place-items: center;
+  width: 1.8em;
+  height: 1.8em;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  font-size: 10.5em;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stage svg .flowchart-link { stroke: #8a8479 !important; stroke-width: 1.5px !important; transition: opacity 0.18s; }
+
+.stage svg .edgeLabel { transition: opacity 0.18s; }
+
+.stage svg .edgeLabel .labelBkg { background: none !important; }
+
+.stage svg .edgeLabel foreignObject { overflow: visible; }
+
+.stage svg span.edgeLabel {
+  display: inline-block;
+  background: #fff !important;
+  border-radius: 5px;
+  box-shadow: 0 0 0 4px #fff, 0 0 0 5px var(--rule);
+  font: 500 12px/16px var(--sans);
+  color: #45413b !important;
+}
+
+.stage svg span.edgeLabel:empty { display: none; }
+
+.stage svg span.edgeLabel p { margin: 0; }
+
+.stage svg .cluster rect { fill: rgba(31, 29, 26, 0.025) !important; stroke: #c9c3b7 !important; stroke-dasharray: 5 5; rx: 14px; }
+
+.stage svg .cluster-label span { font: 600 11px/1.5 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted) !important; }
+
+figure.focused .card:not(.on):not(.near), figure.focused .flowchart-link:not(.on), figure.focused g.edgeLabel:not(.on) { opacity: 0.25; }
+
+.card.on, .card:focus-visible { border-color: var(--accent); border-style: solid; box-shadow: 0 0 0 3px rgba(15, 94, 90, 0.16), 0 8px 18px -8px rgba(31, 29, 26, 0.3); }
+
+.card.on .chip { background: var(--accent); }
+
+.stage svg .flowchart-link.on { stroke: var(--accent) !important; stroke-width: 2.25px !important; stroke-dasharray: 7 5 !important; animation: flow 0.7s linear infinite; }
+
+@keyframes flow { from { stroke-dashoffset: 12; } to { stroke-dashoffset: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .stage svg .flowchart-link.on { animation: none; }
+  .card { transition: none; }
+}
+
+/* Other diagram types keep Mermaid's drawing and get numbered badges. */
+.stage svg .badge circle { fill: var(--ink); stroke: #fff; stroke-width: 2px; }
+
+.stage svg .badge text { fill: #fff; font: 700 12px var(--sans); }
+
+/* The notes: what each box means. */
+.side { border-top: 1px solid var(--rule); padding: 16px 22px 20px; }
+
+.walk { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font: 600 11px/1 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+.walk button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ink);
+  font: 15px/1 var(--sans);
+  cursor: pointer;
+}
+
+.walk button:hover { border-color: var(--accent); color: var(--accent); }
+
+.walk .at { min-width: 92px; text-align: center; }
+
+ol.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 20px; margin: 0; font: 15px/1.5 var(--sans); }
+
+ol.notes li {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.15s;
+}
+
+ol.notes li::before { content: none; }
+
+ol.notes li:hover, ol.notes li:focus-visible { background: #f6f4ee; }
+
+ol.notes li.on { background: #e7f1ef; }
+
+ol.notes .n { width: 20px; height: 20px; margin-top: 2px; border-radius: 50%; background: var(--ink); color: #fff; font: 700 11px/20px var(--sans); text-align: center; }
+
+ol.notes li.on .n { background: var(--accent); }
+
+ol.notes .say .tile { display: none; }
+
+ol.notes .say b { display: block; font-weight: 600; }
+
+ol.notes .say > span { color: #45413b; }
+
+@media (min-width: 900px) {
+  figure.tall { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); align-items: stretch; }
+  figure.tall .side { border-top: 0; border-left: 1px solid var(--rule); }
+  figure.tall ol.notes { grid-template-columns: 1fr; position: sticky; top: 16px; }
+}
+
+footer { clear: both; margin-top: 72px; padding-top: 18px; border-top: 1px solid var(--rule); font: 13px/1.5 var(--sans); color: var(--muted); }
+
+@media (max-width: 640px) {
+  body { font-size: 17px; }
+  main { padding: 40px 20px 64px; }
+  h1 { font-size: 31px; }
+  .lead { font-size: 20px; }
+  figure.diagram { width: 100%; }
+  .canvas { padding: 18px 10px; }
+}
+
+@media print {
+  aside.margin { float: none; width: auto; margin: 4px 0 20px; }
+  figure.diagram { break-inside: avoid; }
+}
